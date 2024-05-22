@@ -12,6 +12,8 @@ import java.util.concurrent.*;
  *      耗费无谓的CPU资源, 也并不能及时获取CPU资源
  *  3. 结论: Future对结果的获取并不是很友好, 只能通过阻塞和轮询
  *
+ *  4. 所以我们需要一种, 能够在执行完了之后, 主动回调我们的方法, 而不是我们一直去轮询消耗CPU
+ *  5. 将多个异步任务的计算结果组合起来, 后一个异步任务依赖前一个异步任务的结果
  *
  *
  * @author PengJiaJun
@@ -64,28 +66,28 @@ public class Demo04Future {
         // 可以新开一个线程来轮询监测 futureTask.isDone() 是否执行完了, 执行完了才去 get();
         new Thread(() -> {
             boolean flag = true;
-           while(flag) {
-               boolean done = futureTask.isDone();// 是否执行完了
-               if(done) {
-                   try {
-                       String res = futureTask.get();
-                       System.out.println(Thread.currentThread().getName() + " ==> res = " + res);
-                       // 插入数据库等其他操作...
-                   } catch (InterruptedException e) {
-                       e.printStackTrace();
-                   } catch (ExecutionException e) {
-                       e.printStackTrace();
-                   }
-                   flag = false;
-               }
+            while(flag) {
+                boolean done = futureTask.isDone();// 是否执行完了
+                if(done) {
+                    try {
+                        String res = futureTask.get();
+                        System.out.println(Thread.currentThread().getName() + " ==> res = " + res);
+                        // 插入数据库等其他操作...
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    } catch (ExecutionException e) {
+                        e.printStackTrace();
+                    }
+                    flag = false;
+                }
 
-               // 如果没有执行完, 则等200毫秒后继续判断
-               try {
-                   Thread.sleep(200);
-               } catch (InterruptedException e) {
-                   e.printStackTrace();
-               }
-           }
+                // 如果没有执行完, 则等200毫秒后继续判断
+                try {
+                    Thread.sleep(200);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
         }).start();
 
         // 这边就直接返回了
