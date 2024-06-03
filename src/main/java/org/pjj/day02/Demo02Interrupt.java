@@ -19,7 +19,42 @@ public class Demo02Interrupt {
     public static void main(String[] args) throws InterruptedException {
 //        m1_volatile();
 //        m2_AtomicBoolean();
-        m3_interrupt();
+//        m3_interrupt();
+        m4_interrupt();
+    }
+
+    /**
+     * 如果一个线程在阻塞中被其他线程调用了中断方法, 那么该线程会抛出异常 java.lang.InterruptedException: sleep interrupted 并将中断状态清除 (重新设置为false)
+     *
+     * 当t2线程将 t1线程的中断状态修改为true时, 正常来说t1会检测到中断状态的修改并做出处理, 但是当t1线程处于阻塞时发现该线程中断状态为true, 那么会抛出异常并且将中断状态清除,
+     * 导致下一次循环时判断中断状态依旧为false, 则不会停止循环
+     * 如果在catch中再次修改中断状态为true, 由于catch中也没有阻塞了, 所以下一次循环时候检测到中断状态为true就直接停止循环了,结束线程了
+     *
+     * @throws InterruptedException
+     */
+    private static void m4_interrupt() throws InterruptedException {
+        Thread t1 = new Thread(() -> {
+            while(true) {
+                if(Thread.currentThread().isInterrupted()) {
+                    System.out.println("t1 --- interrupt()被调用, 程序停止");
+                    break;
+                }
+
+                System.out.println("t1 --- 业务中...");
+
+                try {
+                    Thread.sleep(200);
+                } catch (InterruptedException e) {
+//                    Thread.currentThread().interrupt();
+                    e.printStackTrace();
+                }
+            }
+        }, "t1");
+        t1.start();
+
+        Thread.sleep(300);
+
+        new Thread(t1::interrupt, "t2").start();
     }
 
     private static void m3_interrupt() throws InterruptedException {
