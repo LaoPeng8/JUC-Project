@@ -20,7 +20,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * LockSupport.unpark(线程);
  * 1. 不需要一定要在锁块中
  * 2. 可以先unpark() 后 park() 也一样会被唤醒
- *
+ * 3. park()是需要有"许可证"才会放行, unpark()则是获取"许可证", 但是"许可证不会累积, 最多只有一个. 所以在m4_park_unpark()示例中, t1线程不会打印被唤醒了
  *
  * @author PengJiaJun
  * @Date 2024/06/03 15:00
@@ -29,7 +29,28 @@ public class Demo03LockSupportDemo {
     public static void main(String[] args) throws InterruptedException {
 //        m1_wait_notify();
 //        m2_await_signal();
-        m3_park_unpark();
+//        m3_park_unpark();
+        m4_park_unpark();
+    }
+
+    public static void m4_park_unpark() throws InterruptedException {
+        Thread t1 = new Thread(() -> {
+            System.out.println(Thread.currentThread().getName() + " --- 业务中...");
+            LockSupport.park();
+            LockSupport.park();
+            System.out.println(Thread.currentThread().getName() + " --- 被唤醒了");
+        }, "t1");
+        t1.start();
+
+        Thread.sleep(1000);
+
+        new Thread(() -> {
+            System.out.println(Thread.currentThread().getName() + " ---业务中... ");
+            LockSupport.unpark(t1);
+            LockSupport.unpark(t1);
+            LockSupport.unpark(t1);
+            System.out.println(Thread.currentThread().getName() + " --- 发出通知");
+        }, "t2").start();
     }
 
     public static void m3_park_unpark() throws InterruptedException {
